@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Config>
+    <!--    <JDBC>-->
+    <!--        <stationName>棋乌分中心</stationName>-->
+    <!--        <IP>192.168.10.219</IP>-->
+    <!--        <userName>sa</userName>-->
+    <!--        <passwd>Xz1VdXg5PDA4M3pWPzdANTF1ODxQOF9s</passwd>-->
+    <!--        <dataBaseName>qiwucenter</dataBaseName>-->
+    <!--        <dataBaseType>1</dataBaseType>-->
+    <!--    </JDBC>-->
+    <JDBCLW>
+        <stationName>联网中心</stationName>
+        <IP>192.168.10.92</IP>
+        <userName>nmglwadmin</userName>
+        <passwd>Xz1VdXg5PDA4M3pWPzdANTF1ODxQOF9s</passwd>
+        <dataBaseName>orcl</dataBaseName>
+        <dataBaseType>2</dataBaseType>
+    </JDBCLW>
+    <JDBC>
+        <stationName>ceshidb==>1</stationName>
+        <IP>localhost</IP>
+        <userName>root</userName>
+        <passwd>bjpmWXg8OC47LDZoOVw9N1RJTnotX0Vi</passwd>
+        <dataBaseName>ceshidb</dataBaseName>
+        <dataBaseType>4</dataBaseType>
+        //ROADNO STANO PORTNO 有则填上，没有填00
+        <roadNO>00</roadNO>
+        <staNO>00</staNO>
+        <portNO>00</portNO>
+    </JDBC>
+    <INIT>
+        //10联网中心 20分中心 30站级
+        <level>10</level>
+        <fileOutTime>30</fileOutTime>
+        //级别为10 不用配置
+        //级别20 配置联网中心ip
+        //级别30 配置联网中心|分中心ip
+        <superiorIP>127.0.0.1|127.0.0.1</superiorIP>
+        <specialStano>520|852</specialStano>
+        //调用webservice端口
+        <webServicePort>8080</webServicePort>
+        //俩站一个ip另一个端口
+        <specialPort>8081</specialPort>
+        //一次那取任务数量
+        <getTaskNum>100</getTaskNum>
+    </INIT>
+</Config>
