@@ -12,6 +12,10 @@ public class FileInfo {
     private String fileName;
     private String fileMD5;
     private String fileUrl;
+    private int fileType;
+    private String fileVersion;
+    private String stagbID;
+    private long fileSize;
 
     @Override
     public String toString() {
@@ -20,7 +24,43 @@ public class FileInfo {
                 ", fileName='" + fileName + '\'' +
                 ", fileMD5='" + fileMD5 + '\'' +
                 ", fileUrl='" + fileUrl + '\'' +
+                ", fileType=" + fileType +
+                ", fileVersion='" + fileVersion + '\'' +
+                ", stagbID='" + stagbID + '\'' +
+                ", fileSize=" + fileSize +
                 '}';
+    }
+
+    public int getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(int fileType) {
+        this.fileType = fileType;
+    }
+
+    public String getFileVersion() {
+        return fileVersion;
+    }
+
+    public void setFileVersion(String fileVersion) {
+        this.fileVersion = fileVersion;
+    }
+
+    public String getStagbID() {
+        return stagbID;
+    }
+
+    public void setStagbID(String stagbID) {
+        this.stagbID = stagbID;
+    }
+
+    public long getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(long fileSize) {
+        this.fileSize = fileSize;
     }
 
     public String getFileKey() {

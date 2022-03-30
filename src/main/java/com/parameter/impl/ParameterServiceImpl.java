@@ -59,15 +59,15 @@ public class ParameterServiceImpl implements ParameterService {
     }
 
     //判断该参数是否存在
-    private static boolean isExist(String fileKey){
+    private static boolean isExist(String fileKey) {
         Connection connection = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
-        Database database =null;
+        Database database = null;
         try {
 
             String sql = "select * from FT_UPLOAD_TABLE where FILEKEY = ?";
-            database =DataBaseUtil.getDataBase(0);
+            database = DataBaseUtil.getDataBase(0);
             connection = DataBaseUtil.getConn(database);
             ps = connection.prepareStatement(sql);
             ps.setString(1, fileKey);
@@ -84,15 +84,15 @@ public class ParameterServiceImpl implements ParameterService {
     }
 
     //在联网中心创建任务
-    public static boolean analysisFile(String fileInfo,String level) {
+    public static boolean analysisFile(String fileInfo) {
         try {
             //接收文件基本信息json字符串并解析
             JSONObject parseObject = JsonUtil.transToUpperObject(fileInfo);
             //根据类型去判断自动还是手动
             String fileType = parseObject.getString("FILETYPE");
             String fileKey = parseObject.getString("FILEKEY");
-            if(isExist(fileKey)){
-                LogCommon.WriteLogNormal("该参数信息已存在,fileKey:" + fileKey , "taskCenter");
+            if (isExist(fileKey)) {
+                LogCommon.WriteLogNormal("该参数信息已存在,fileKey:" + fileKey, "taskCenter");
                 return true;
             }
             int fileOutPush = getType(Integer.parseInt(fileType));
@@ -105,29 +105,29 @@ public class ParameterServiceImpl implements ParameterService {
                 if (stagbID == null || "".equals(stagbID)) {
                     LogCommon.WriteLogNormal("该参数没有STAGBID信息，创建所有任务", "taskCenter");
                     List<SubCompany> list = getAllCenter();
-                    boolean centerFlag = createCenterTask(parseObject.toJSONString(),list,level);
-                    boolean stanoFlag =createStanoTask(parseObject.toJSONString(),level);
-                    if(centerFlag&&stanoFlag){
-                        insertUploadTable(parseObject.toJSONString());
+                    boolean centerFlag = createCenterTask(parseObject, list);
+                    boolean stanoFlag = createStanoTask(parseObject);
+                    if (centerFlag && stanoFlag) {
+                        insertUploadTable(parseObject);
                         return true;
                     }
                 } else {
-                    boolean stagbidFlag = createStagbidOneTask(parseObject.toJSONString(), stagbID,level);
+                    boolean stagbidFlag = createStagbidOneTask(parseObject, stagbID);
                     List<SubCompany> list = new ArrayList<>();
                     SubCompany subCompany = getOneCenter(stagbID);
                     list.add(subCompany);
-                    boolean centerFlag = createCenterTask(parseObject.toJSONString(),list,level);
-                    if(centerFlag&&stagbidFlag){
-                        insertUploadTable(parseObject.toJSONString());
+                    boolean centerFlag = createCenterTask(parseObject, list);
+                    if (centerFlag && stagbidFlag) {
+                        insertUploadTable(parseObject);
                         return true;
                     }
                 }
             } else {
                 //手动下发任务
                 LogCommon.WriteLogNormal("该任务是手动下发任务,fileKey:" + fileKey + " fileType:" + fileType, "taskCenter");
-                boolean manualFlag = createManualTask(fileInfo, fileType,level);
-                if(manualFlag){
-                    insertUploadTable(parseObject.toJSONString());
+                boolean manualFlag = createManualTask(fileInfo, fileType);
+                if (manualFlag) {
+                    insertUploadTable(parseObject);
                     return true;
                 }
             }
@@ -139,14 +139,14 @@ public class ParameterServiceImpl implements ParameterService {
     }
 
     //在分中心创建任务
-    public static boolean analysisCenterFile(String fileInfo,String level) {
+    public static boolean analysisCenterFile(String fileInfo) {
         try {
             //接收文件基本信息json字符串并解析
             JSONObject parseObject = JsonUtil.transToUpperObject(fileInfo);
             String fileType = parseObject.getString("FILETYPE");
             String fileKey = parseObject.getString("FILEKEY");
-            if(isExist(fileKey)){
-                LogCommon.WriteLogNormal("该参数信息已存在,fileKey:" + fileKey , "taskCenter");
+            if (isExist(fileKey)) {
+                LogCommon.WriteLogNormal("该参数信息已存在,fileKey:" + fileKey, "taskCenter");
                 return true;
             }
             int fileOutPush = Integer.valueOf(parseObject.getString("FILEOUTPUSH"));
@@ -156,26 +156,26 @@ public class ParameterServiceImpl implements ParameterService {
                 String stagbID = parseObject.getString("STAGBID");
                 if (stagbID == null || "".equals(stagbID)) {
                     //自动下发任务
-                    boolean stanoFlag = createStanoTask(parseObject.toJSONString(),level);
+                    boolean stanoFlag = createStanoTask(parseObject);
                     //下发到车道任务
-                    boolean portnoFlag = createPortnoTask(parseObject.toJSONString(),level);
+                    boolean portnoFlag = createPortnoTask(parseObject);
                     //插入参数表
-                    if(stanoFlag&&portnoFlag){
-                        insertUploadTable(parseObject.toJSONString());
+                    if (stanoFlag && portnoFlag) {
+                        insertUploadTable(parseObject);
                         return true;
                     }
-                }else {
+                } else {
                     //插入参数表
                     LogCommon.WriteLogNormal("该参数有国标编码,STAGBID:" + stagbID, "taskCenter");
-                    insertUploadTable(parseObject.toJSONString());
+                    insertUploadTable(parseObject);
                     return true;
                 }
             } else {
                 //手动下发任务
                 LogCommon.WriteLogNormal("该任务是手动下发任务,fileKey:" + fileKey + " fileType:" + fileType, "taskCenter");
-                boolean manualFlag = createManualTask(fileInfo, fileType,level);
-                if(manualFlag){
-                    insertUploadTable(parseObject.toJSONString());
+                boolean manualFlag = createManualTask(fileInfo, fileType);
+                if (manualFlag) {
+                    insertUploadTable(parseObject);
                     return true;
                 }
             }
@@ -187,23 +187,20 @@ public class ParameterServiceImpl implements ParameterService {
     }
 
     //创建车道任务
-    private static boolean createPortnoTask(String fileInfo,String level) {
+    private static boolean createPortnoTask(JSONObject objectPortno) {
         Connection connection = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
-        Database database =null;
+        Database database = null;
         try {
-            JSONObject parseObject = JsonUtil.transToUpperObject(fileInfo);
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
             //创建站级任务
             LogCommon.WriteLogNormal("开始创建下发到车道任务", "taskCenter");
             List<SetUp> listPortno = getAllPort();
-            String insertPortno = null;
             database = DataBaseUtil.getDataBase(0);
             connection = DataBaseUtil.getConn(database);
             connection.setAutoCommit(false);
             for (int i = 0; i < listPortno.size(); i++) {
-                JSONObject objectPortno = parseObject;
                 objectPortno.put("SERVERIP", listPortno.get(i).getSrvIP());
                 objectPortno.put("STANO", listPortno.get(i).getStaNO());
                 objectPortno.put("ROADNO", listPortno.get(i).getRoadNO());
@@ -211,29 +208,15 @@ public class ParameterServiceImpl implements ParameterService {
                 objectPortno.put("LOCATION", 3);
                 objectPortno.put("TASKSTATUS", 2);
                 //创建任务id
-                String nowDate = level + sdf.format(new Date()) + "" + (i + 10);
+                String nowDate = "30" + sdf.format(new Date()) + "" + (i + 10);
                 objectPortno.put("TASKID", nowDate);
                 if (i == 0) {
-                    //拼接插入sql
-                    StringBuffer sql1 = null;
-                    StringBuffer sql2 = null;
-                    sql1.append("if not exists ( ");
-                    sql1.append("select 1 from FT_TASK_TABLE where FILEKEY = ? )");
-                    sql1.append("insert into FT_TASK_TABLE (");
-                    sql2.append("values(");
-                    //fastjson解析方法
-                    for (Map.Entry<String, Object> entry : objectPortno.entrySet()) {
-                        sql1.append(entry.getKey() + ",");
-                        sql2.append("?,");
-                    }
-                    sql1.replace(sql1.lastIndexOf(","), sql1.lastIndexOf(",") + 1, ") ");
-                    sql2.replace(sql2.lastIndexOf(","), sql2.lastIndexOf(",") + 1, ")");
-                    insertPortno = sql1.append(sql2).toString();
+                    String insertPortno = getInsertSql(objectPortno, "FT_TASK_TABLE");
                     ps = connection.prepareStatement(insertPortno);
                 }
                 //任务插入任务表
                 int index = 0;
-                ps.setString(++index, parseObject.getString("FILEKEY"));
+                ps.setString(++index, objectPortno.getString("FILEKEY"));
                 for (Map.Entry<String, Object> entry : objectPortno.entrySet()) {
                     if (entry.getValue() == null || "".equals(entry.getValue())) {
                         ps.setNull(++index, Types.CHAR);
@@ -251,10 +234,10 @@ public class ParameterServiceImpl implements ParameterService {
         } catch (Exception e) {
             e.printStackTrace();
             LogCommon.WriteLogNormal("创建下发到车道任务异常：" + e.getMessage(), "taskCenter");
-            LogCommon.WriteLogNormal("开始回滚" , "taskCenter");
+            LogCommon.WriteLogNormal("开始回滚", "taskCenter");
             try {
                 connection.rollback();
-                LogCommon.WriteLogNormal("回滚结束" , "taskCenter");
+                LogCommon.WriteLogNormal("回滚结束", "taskCenter");
             } catch (SQLException throwables) {
                 throwables.printStackTrace();
                 LogCommon.WriteLogNormal("回滚异常异常：" + throwables.getMessage(), "taskCenter");
@@ -266,14 +249,14 @@ public class ParameterServiceImpl implements ParameterService {
     }
 
     //在站创建任务
-    public static boolean analysisStanoFile(String fileInfo,String level) {
+    public static boolean analysisStanoFile(String fileInfo) {
         try {
             //接收文件基本信息json字符串并解析
             JSONObject parseObject = JsonUtil.transToUpperObject(fileInfo);
             String fileType = parseObject.getString("FILETYPE");
             String fileKey = parseObject.getString("FILEKEY");
-            if(isExist(fileKey)){
-                LogCommon.WriteLogNormal("该参数信息已存在,fileKey:" + fileKey , "taskCenter");
+            if (isExist(fileKey)) {
+                LogCommon.WriteLogNormal("该参数信息已存在,fileKey:" + fileKey, "taskCenter");
                 return true;
             }
             int fileOutPush = Integer.valueOf(parseObject.getString("FILEOUTPUSH"));
@@ -282,18 +265,18 @@ public class ParameterServiceImpl implements ParameterService {
                 LogCommon.WriteLogNormal("该任务是自动下发任务,fileKey:" + fileKey + " fileType:" + fileType, "taskCenter");
                 //自动下发任务
                 //下发到车道任务
-                boolean portnoFlag = createPortnoTask(parseObject.toJSONString(),level);
+                boolean portnoFlag = createPortnoTask(parseObject);
                 //插入参数表
-                if(portnoFlag){
-                    insertUploadTable(parseObject.toJSONString());
+                if (portnoFlag) {
+                    insertUploadTable(parseObject);
                     return true;
                 }
             } else {
                 //手动下发任务
                 LogCommon.WriteLogNormal("该任务是手动下发任务,fileKey:" + fileKey + " fileType:" + fileType, "taskCenter");
-                boolean manualFlag = createManualTask(fileInfo, fileType,level);
-                if(manualFlag){
-                    insertUploadTable(parseObject.toJSONString());
+                boolean manualFlag = createManualTask(fileInfo, fileType);
+                if (manualFlag) {
+                    insertUploadTable(parseObject);
                     return true;
                 }
             }
@@ -310,15 +293,15 @@ public class ParameterServiceImpl implements ParameterService {
             switch (level) {
                 case "10":
                     //当前级别联网中心
-                    return analysisFile(fileInfo,level);
+                    return analysisFile(fileInfo);
                 case "20":
                     //当前级别分中心
                     //创建往站和车道下发任务
-                    return analysisCenterFile(fileInfo,level);
+                    return analysisCenterFile(fileInfo);
                 case "30":
                     //当前级别站
                     //创建往车道下发任务
-                    return analysisStanoFile(fileInfo,level);
+                    return analysisStanoFile(fileInfo);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -388,29 +371,17 @@ public class ParameterServiceImpl implements ParameterService {
     }
 
     //任务创建成功插入参数信息表
-    public static void insertUploadTable(String fileInfo) {
+    private static void insertUploadTable(JSONObject parseObject) {
         Connection connection = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
         Database database = null;
         try {
-            JSONObject parseObject = JsonUtil.transToUpperObject(fileInfo);
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            parseObject.put("FILEDT", sdf.format(new Date()));
             //基础信息插入基础信息表
             LogCommon.WriteLogNormal("任务表创建完成，将参数信息插入FT_UPLOAD_TABLE表", "taskCenter");
-            StringBuffer sql1 = null;
-            StringBuffer sql2 = null;
-            sql1.append("if not exists ( ");
-            sql1.append("select 1 from FT_UPLOAD_TABLE where FILEKEY = ?)");
-            sql1.append("insert into FT_UPLOAD_TABLE (");
-            sql2.append("values(");
-            //fastjson解析方法
-            for (Map.Entry<String, Object> entry : parseObject.entrySet()) {
-                sql1.append(entry.getKey() + ",");
-                sql2.append("?,");
-            }
-            sql1.replace(sql1.lastIndexOf(","), sql1.lastIndexOf(",") + 1, ") ");
-            sql2.replace(sql2.lastIndexOf(","), sql2.lastIndexOf(",") + 1, ")");
-            String fileInfoSql = sql1.append(sql2).toString();
+            String fileInfoSql = getInsertSql(parseObject, "FT_UPLOAD_TABLE");
             database = DataBaseUtil.getDataBase(0);
             connection = DataBaseUtil.getConn(database);
             ps.clearParameters();
@@ -552,48 +523,31 @@ public class ParameterServiceImpl implements ParameterService {
     }
 
     //创建分中心任务
-    public static boolean createCenterTask(String fileInfo,List<SubCompany> list,String level) {
+    private static boolean createCenterTask(JSONObject objectCenter, List<SubCompany> list) {
         Connection connection = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
         Database database = null;
         try {
-            JSONObject parseObject = JsonUtil.transToUpperObject(fileInfo);
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
             LogCommon.WriteLogNormal("开始创建下发到分中心任务", "taskCenter");
-            String insertCenter = null;
             //任务插入任务表
             database = DataBaseUtil.getDataBase(0);
             connection = DataBaseUtil.getConn(database);
             connection.setAutoCommit(false);
             for (int i = 0; i < list.size(); i++) {
-                JSONObject objectCenter = parseObject;
                 objectCenter.put("SERVERIP", list.get(i).getSrvIP());
                 objectCenter.put("LOCATION", 1);
                 objectCenter.put("TASKSTATUS", 2);
                 //创建任务id
-                String nowDate = level + sdf.format(new Date()) + "" + (i + 10);
+                String nowDate = "10" + sdf.format(new Date()) + "" + (i + 10);
                 objectCenter.put("TASKID", nowDate);
                 if (i == 0) {
-                    //拼接插入sql
-                    StringBuffer sql1 = null;
-                    StringBuffer sql2 = null;
-                    sql1.append("if not exists ( ");
-                    sql1.append("select 1 from FT_TASK_TABLE where FILEKEY = ? ) ");
-                    sql1.append("insert into FT_TASK_TABLE (");
-                    sql2.append("values(");
-                    //fastjson解析方法
-                    for (Map.Entry<String, Object> entry : objectCenter.entrySet()) {
-                        sql1.append(entry.getKey() + ",");
-                        sql2.append("?,");
-                    }
-                    sql1.replace(sql1.lastIndexOf(","), sql1.lastIndexOf(",") + 1, ") ");
-                    sql2.replace(sql2.lastIndexOf(","), sql2.lastIndexOf(",") + 1, ")");
-                    insertCenter = sql1.append(sql2).toString();
+                    String insertCenter = getInsertSql(objectCenter, "FT_TASK_TABLE");
                     ps = connection.prepareStatement(insertCenter);
                 }
                 int index = 0;
-                ps.setString(++index, parseObject.getString("FILEKEY"));
+                ps.setString(++index, objectCenter.getString("FILEKEY"));
                 for (Map.Entry<String, Object> entry : objectCenter.entrySet()) {
                     if (entry.getValue() == null || "".equals(entry.getValue())) {
                         ps.setNull(++index, Types.CHAR);
@@ -611,10 +565,10 @@ public class ParameterServiceImpl implements ParameterService {
         } catch (Exception e) {
             e.printStackTrace();
             LogCommon.WriteLogNormal("创建下发到分中心任务异常：" + e.getMessage(), "taskCenter");
-            LogCommon.WriteLogNormal("开始回滚" , "taskCenter");
+            LogCommon.WriteLogNormal("开始回滚", "taskCenter");
             try {
                 connection.rollback();
-                LogCommon.WriteLogNormal("回滚完成" , "taskCenter");
+                LogCommon.WriteLogNormal("回滚完成", "taskCenter");
             } catch (SQLException throwables) {
                 throwables.printStackTrace();
                 LogCommon.WriteLogNormal("回滚异常：" + throwables.getMessage(), "taskCenter");
@@ -625,8 +579,31 @@ public class ParameterServiceImpl implements ParameterService {
         return false;
     }
 
+    //拼接插入sql
+    private static String getInsertSql(JSONObject jsonObject, String tableName) {
+        try {
+            StringBuffer sql1 = null;
+            StringBuffer sql2 = null;
+            sql1.append("if not exists ( ");
+            sql1.append("select 1 from " + tableName + " where TASKID = ? ) ");
+            sql1.append("insert into " + tableName + " (");
+            sql2.append("values(");
+            //fastjson解析方法
+            for (Map.Entry<String, Object> entry : jsonObject.entrySet()) {
+                sql1.append(entry.getKey() + ",");
+                sql2.append("?,");
+            }
+            sql1.replace(sql1.lastIndexOf(","), sql1.lastIndexOf(",") + 1, ") ");
+            sql2.replace(sql2.lastIndexOf(","), sql2.lastIndexOf(",") + 1, ")");
+            return sql1.append(sql2).toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     //创建手动下发任务
-    public static boolean createManualTask(String fileInfo, String fileType,String level) {
+    public static boolean createManualTask(String fileInfo, String fileType) {
         Connection connection = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -649,24 +626,10 @@ public class ParameterServiceImpl implements ParameterService {
                 objectManual.put("LOCATION", listManual.get(i).getLocation());
                 objectManual.put("TASKSTATUS", 2);
                 //创建任务id
-                String nowDate = level + sdf.format(new Date()) + "" + (i + 10);
+                String nowDate = "20" + sdf.format(new Date()) + "" + (i + 10);
                 objectManual.put("TASKID", nowDate);
                 if (i == 0) {
-                    //拼接插入sql
-                    StringBuffer sql1 = null;
-                    StringBuffer sql2 = null;
-                    sql1.append("if not exists ( ");
-                    sql1.append("select 1 from FT_TASK_TABLE where FILEKEY = ? )");
-                    sql1.append("insert into FT_TASK_TABLE (");
-                    sql2.append("values(");
-                    //fastjson解析方法
-                    for (Map.Entry<String, Object> entry : objectManual.entrySet()) {
-                        sql1.append(entry.getKey() + ",");
-                        sql2.append("?,");
-                    }
-                    sql1.replace(sql1.lastIndexOf(","), sql1.lastIndexOf(",") + 1, ") ");
-                    sql2.replace(sql2.lastIndexOf(","), sql2.lastIndexOf(",") + 1, ")");
-                    insertManual = sql1.append(sql2).toString();
+                    insertManual = getInsertSql(objectManual, "FT_TASK_TABLE");
                     ps = connection.prepareStatement(insertManual);
                 }
                 //任务插入任务表
@@ -692,7 +655,7 @@ public class ParameterServiceImpl implements ParameterService {
             LogCommon.WriteLogNormal("开始回滚：", "taskCenter");
             try {
                 connection.rollback();
-                LogCommon.WriteLogNormal("回滚结束" , "taskCenter");
+                LogCommon.WriteLogNormal("回滚结束", "taskCenter");
             } catch (SQLException throwables) {
                 throwables.printStackTrace();
                 LogCommon.WriteLogNormal("回滚异常：" + throwables.getMessage(), "taskCenter");
@@ -704,52 +667,35 @@ public class ParameterServiceImpl implements ParameterService {
     }
 
     //创建站级任务
-    public static boolean createStanoTask(String fileInfo,String level) {
+    private static boolean createStanoTask(JSONObject objectStano) {
         Connection connection = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
         Database database = null;
         try {
-            JSONObject parseObject = JsonUtil.transToUpperObject(fileInfo);
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
             //创建站级任务
             LogCommon.WriteLogNormal("开始创建下发到站任务", "taskCenter");
             List<Name> listStano = getAllStano();
-            String insertStano = null;
             database = DataBaseUtil.getDataBase(0);
             connection = DataBaseUtil.getConn(database);
             connection.setAutoCommit(false);
             for (int i = 0; i < listStano.size(); i++) {
-                JSONObject objectStano = parseObject;
                 objectStano.put("SERVERIP", listStano.get(i).getSrvIP());
                 objectStano.put("STANO", listStano.get(i).getStaNO());
                 objectStano.put("ROADNO", listStano.get(i).getRoadNO());
                 objectStano.put("LOCATION", 2);
                 objectStano.put("TASKSTATUS", 2);
                 //创建任务id
-                String nowDate = level+ sdf.format(new Date()) + "" + (i + 10);
+                String nowDate = "20" + sdf.format(new Date()) + "" + (i + 10);
                 objectStano.put("TASKID", nowDate);
                 if (i == 0) {
-                    //拼接插入sql
-                    StringBuffer sql1 = null;
-                    StringBuffer sql2 = null;
-                    sql1.append("if not exists ( ");
-                    sql1.append("select 1 from FT_TASK_TABLE where FILEKEY = ? )");
-                    sql1.append("insert into FT_TASK_TABLE (");
-                    sql2.append("values(");
-                    //fastjson解析方法
-                    for (Map.Entry<String, Object> entry : objectStano.entrySet()) {
-                        sql1.append(entry.getKey() + ",");
-                        sql2.append("?,");
-                    }
-                    sql1.replace(sql1.lastIndexOf(","), sql1.lastIndexOf(",") + 1, ") ");
-                    sql2.replace(sql2.lastIndexOf(","), sql2.lastIndexOf(",") + 1, ")");
-                    insertStano = sql1.append(sql2).toString();
+                    String insertStano = getInsertSql(objectStano, "FT_TASK_TABLE");
                     ps = connection.prepareStatement(insertStano);
                 }
                 //任务插入任务表
                 int index = 0;
-                ps.setString(++index, parseObject.getString("FILEKEY"));
+                ps.setString(++index, objectStano.getString("FILEKEY"));
                 for (Map.Entry<String, Object> entry : objectStano.entrySet()) {
                     if (entry.getValue() == null || "".equals(entry.getValue())) {
                         ps.setNull(++index, Types.CHAR);
@@ -782,17 +728,15 @@ public class ParameterServiceImpl implements ParameterService {
     }
 
     //根据国标创建具体一个站级任务
-    public static boolean createStagbidOneTask(String fileInfo, String stagbID,String level) {
+    private static boolean createStagbidOneTask(JSONObject jsonObjectTask, String stagbID) {
         Connection connection = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
         Database database = null;
         try {
-            JSONObject parseObject = JsonUtil.transToUpperObject(fileInfo);
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
             //查询站级信息表创建任务
             LogCommon.WriteLogNormal("根据STAGBID创建下发到对应站任务", "taskCenter");
-            JSONObject jsonObjectTask = parseObject;
             Name name = getOneStano(stagbID);
             if (name == null) {
                 LogCommon.WriteLogNormal("站级信息表该STAGBID不存在", "taskCenter");
@@ -803,7 +747,7 @@ public class ParameterServiceImpl implements ParameterService {
                 jsonObjectTask.put("LOCATION", 2);
                 jsonObjectTask.put("TASKSTATUS", 2);
                 //创建任务id
-                String nowDate = level + sdf.format(new Date()) + "11";
+                String nowDate = "20" + sdf.format(new Date()) + "11";
                 jsonObjectTask.put("TASKID", nowDate);
                 //拼接插入sql
                 StringBuffer sql1 = null;
@@ -826,8 +770,8 @@ public class ParameterServiceImpl implements ParameterService {
                 ps.clearParameters();
                 ps = connection.prepareStatement(TaskSql);
                 int index = 0;
-                ps.setString(++index, parseObject.getString("FILEKEY"));
-                ps.setString(++index, parseObject.getString("SERVERIP"));
+                ps.setString(++index, jsonObjectTask.getString("FILEKEY"));
+                ps.setString(++index, jsonObjectTask.getString("SERVERIP"));
                 for (Map.Entry<String, Object> entry : jsonObjectTask.entrySet()) {
                     if (entry.getValue() == null || "".equals(entry.getValue())) {
                         ps.setNull(++index, Types.CHAR);
@@ -849,7 +793,7 @@ public class ParameterServiceImpl implements ParameterService {
     }
 
     //分中心调用回调函数
-    private static void centerDownloadFileResult(String fileKey,String serverIP,int resultCode,String downResult,String downDT){
+    private static void centerDownloadFileResult(String fileKey, String serverIP, int resultCode, String downResult, String downDT) {
         Connection connection = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -859,27 +803,28 @@ public class ParameterServiceImpl implements ParameterService {
             database = DataBaseUtil.getDataBase(0);
             connection = DataBaseUtil.getConn(database);
             ps = connection.prepareStatement(sql);
-            ps.setInt(1,resultCode);
-            ps.setString(2,downResult);
-            ps.setString(3,downDT);
-            ps.setString(4,fileKey);
-            ps.setString(5,serverIP);
-            ps.setInt(6,1);
+            ps.setInt(1, resultCode);
+            ps.setString(2, downResult);
+            ps.setString(3, downDT);
+            ps.setString(4, fileKey);
+            ps.setString(5, serverIP);
+            ps.setInt(6, 1);
             int num = ps.executeUpdate();
-            if(num==1){
-                LogCommon.WriteLogNormal("更新日志异常","DownloadFileResult");
-            }else {
-                LogCommon.WriteLogNormal("更新日志异常","DownloadFileResult");
+            if (num == 1) {
+                LogCommon.WriteLogNormal("更新日志异常", "DownloadFileResult");
+            } else {
+                LogCommon.WriteLogNormal("更新日志异常", "DownloadFileResult");
             }
         } catch (SQLException throwables) {
             throwables.printStackTrace();
-            LogCommon.WriteLogNormal("更新日志异常","DownloadFileResult");
+            LogCommon.WriteLogNormal("更新日志异常", "DownloadFileResult");
         } finally {
             DataBaseUtil.dataBaseCloseS(connection, ps, rs, Integer.parseInt(database.getDataBaseType()));
         }
     }
+
     //站级调用回调函数
-    private static void stanoDownloadFileResult(String fileKey,int resultCode,String downResult,String downDT,int roadNO,int staNO,int Location){
+    private static void stanoDownloadFileResult(String fileKey, int resultCode, String downResult, String downDT, int roadNO, int staNO, int Location) {
         Connection connection = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -889,29 +834,30 @@ public class ParameterServiceImpl implements ParameterService {
             database = DataBaseUtil.getDataBase(0);
             connection = DataBaseUtil.getConn(database);
             ps = connection.prepareStatement(sql);
-            ps.setInt(1,resultCode);
-            ps.setString(2,downResult);
-            ps.setString(3,downDT);
-            ps.setString(4,fileKey);
-            ps.setInt(5,roadNO);
-            ps.setInt(6,staNO);
-            ps.setInt(7,Location);
-            ps.setInt(8,1);
+            ps.setInt(1, resultCode);
+            ps.setString(2, downResult);
+            ps.setString(3, downDT);
+            ps.setString(4, fileKey);
+            ps.setInt(5, roadNO);
+            ps.setInt(6, staNO);
+            ps.setInt(7, Location);
+            ps.setInt(8, 1);
             int num = ps.executeUpdate();
-            if(num==1){
-                LogCommon.WriteLogNormal("更新日志异常","DownloadFileResult");
-            }else {
-                LogCommon.WriteLogNormal("更新日志异常","DownloadFileResult");
+            if (num == 1) {
+                LogCommon.WriteLogNormal("更新日志异常", "DownloadFileResult");
+            } else {
+                LogCommon.WriteLogNormal("更新日志异常", "DownloadFileResult");
             }
         } catch (SQLException throwables) {
             throwables.printStackTrace();
-            LogCommon.WriteLogNormal("更新日志异常","DownloadFileResult");
+            LogCommon.WriteLogNormal("更新日志异常", "DownloadFileResult");
         } finally {
             DataBaseUtil.dataBaseCloseS(connection, ps, rs, Integer.parseInt(database.getDataBaseType()));
         }
     }
+
     //车道调用回调函数
-    private static void portnoDownloadFileResult(String fileKey,int resultCode,String downResult,String downDT,int roadNO,int staNO,int portNO,int Location){
+    private static void portnoDownloadFileResult(String fileKey, int resultCode, String downResult, String downDT, int roadNO, int staNO, int portNO, int Location) {
         Connection connection = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -921,28 +867,29 @@ public class ParameterServiceImpl implements ParameterService {
             database = DataBaseUtil.getDataBase(0);
             connection = DataBaseUtil.getConn(database);
             ps = connection.prepareStatement(sql);
-            ps.setInt(1,resultCode);
-            ps.setString(2,downResult);
-            ps.setString(3,downDT);
-            ps.setString(4,fileKey);
-            ps.setInt(5,roadNO);
-            ps.setInt(6,staNO);
-            ps.setInt(7,portNO);
-            ps.setInt(8,Location);
-            ps.setInt(9,1);
+            ps.setInt(1, resultCode);
+            ps.setString(2, downResult);
+            ps.setString(3, downDT);
+            ps.setString(4, fileKey);
+            ps.setInt(5, roadNO);
+            ps.setInt(6, staNO);
+            ps.setInt(7, portNO);
+            ps.setInt(8, Location);
+            ps.setInt(9, 1);
             int num = ps.executeUpdate();
-            if(num==1){
-                LogCommon.WriteLogNormal("更新日志异常","DownloadFileResult");
-            }else {
-                LogCommon.WriteLogNormal("更新日志异常","DownloadFileResult");
+            if (num == 1) {
+                LogCommon.WriteLogNormal("更新日志异常", "DownloadFileResult");
+            } else {
+                LogCommon.WriteLogNormal("更新日志异常", "DownloadFileResult");
             }
         } catch (SQLException throwables) {
             throwables.printStackTrace();
-            LogCommon.WriteLogNormal("更新日志异常","DownloadFileResult");
+            LogCommon.WriteLogNormal("更新日志异常", "DownloadFileResult");
         } finally {
             DataBaseUtil.dataBaseCloseS(connection, ps, rs, Integer.parseInt(database.getDataBaseType()));
         }
     }
+
     @Override
     public boolean uploadFileResult(String fileInfo) {
         boolean flag = false;
@@ -976,23 +923,22 @@ public class ParameterServiceImpl implements ParameterService {
             int roadNO = Integer.valueOf(jsonObject.getString("ROADNNO"));
             int staNO = Integer.valueOf(jsonObject.getString("STANO"));
             int portNO = Integer.valueOf(jsonObject.getString("PORTNO"));
-            LogCommon.WriteLogNormal("回调函数回调函数收到"+serverIP+"信息","DownloadFileResult");
-            switch (location){
+            LogCommon.WriteLogNormal("回调函数回调函数收到" + serverIP + "信息", "DownloadFileResult");
+            switch (location) {
                 case 1:
-                    centerDownloadFileResult(fileKey,serverIP,resultCode,downResult,downDT);
+                    centerDownloadFileResult(fileKey, serverIP, resultCode, downResult, downDT);
                     break;
                 case 2:
-                    stanoDownloadFileResult(fileKey,resultCode,downResult,downDT,roadNO,staNO,location);
+                    stanoDownloadFileResult(fileKey, resultCode, downResult, downDT, roadNO, staNO, location);
                     break;
                 case 3:
-                    portnoDownloadFileResult(fileKey,resultCode,downResult,downDT,roadNO,staNO,portNO,location);
+                    portnoDownloadFileResult(fileKey, resultCode, downResult, downDT, roadNO, staNO, portNO, location);
                     break;
             }
         } catch (Exception e) {
             e.printStackTrace();
-            LogCommon.WriteLogNormal("回调函数异常："+e.getMessage(),"DownloadFileResult");
+            LogCommon.WriteLogNormal("回调函数异常：" + e.getMessage(), "DownloadFileResult");
         }
-        //2.添加日志
         return true;
     }
 
@@ -1005,7 +951,7 @@ public class ParameterServiceImpl implements ParameterService {
         Database database = null;
         try {
             String sql = "select * from FT_UPLOAD_TABLE_CENTER";
-            database =DataBaseUtil.getDataBase(0);
+            database = DataBaseUtil.getDataBase(0);
             connection = DataBaseUtil.getConn(database);
             ps = connection.createStatement();
             rs = ps.executeQuery(sql);

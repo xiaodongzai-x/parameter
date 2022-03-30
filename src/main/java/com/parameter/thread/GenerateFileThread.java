@@ -52,7 +52,7 @@ public class GenerateFileThread implements Runnable {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            LogCommon.WriteLogNormal("生成文件线程异常：" + e.getMessage(), "GenerateFileThread");
+            LogCommon.WriteLogNormal("获取文件信息异常：" + e.getMessage(), "GenerateFileThread");
         } finally {
             DataBaseUtil.dataBaseCloseS(connection, ps, rs, Integer.parseInt(database.getDataBaseType()));
         }
@@ -124,7 +124,7 @@ public class GenerateFileThread implements Runnable {
     public void run() {
         String level = GetInit.getInitInfo().getLevel();
         if (!level.equals("10")) {
-            LogCommon.WriteLogNormal(Thread.currentThread().getName() + "生成文件线程已启动...", "Init");
+            LogCommon.WriteLogNormal(Thread.currentThread().getName() + "生成文件线程已启动...", "GenerateFileThread");
             while (true) {
                 try {
                     //生成文件

@@ -23,10 +23,10 @@
         <passwd>bjpmWXg8OC47LDZoOVw9N1RJTnotX0Vi</passwd>
         <dataBaseName>ceshidb</dataBaseName>
         <dataBaseType>4</dataBaseType>
-        //ROADNO STANO PORTNO 有则填上，没有填00
-        <roadNO>00</roadNO>
-        <staNO>00</staNO>
-        <portNO>00</portNO>
+        //ROADNO STANO PORTNO 有则填上，没有填0
+        <roadNO>0</roadNO>
+        <staNO>0</staNO>
+        <portNO>0</portNO>
     </JDBC>
     <INIT>
         //10联网中心 20分中心 30站级

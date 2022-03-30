@@ -84,7 +84,7 @@ public class JsonUtil {
     }
 
     /**
-     * json大写转小写
+     * json转化成小写
      *
      * @return JSONObject
      */
@@ -125,7 +125,7 @@ public class JsonUtil {
 
 
     /**
-     * json大写转小写
+     * json转化成大写
      *
      * @return JSONObject
      */

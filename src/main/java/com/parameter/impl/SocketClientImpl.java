@@ -1,50 +1,50 @@
 package com.parameter.impl;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 
 /**
  * @author xiaodong
  * @version 1.0.0
  * @ClassName SocketClientImpl.java
- * @Description socket¿Í»§¶Ë£¬Íù³µµÀ·¢ËÍÖ¸Áî
- * @createTime 2022Äê03ÔÂ23ÈÕ 13:41:00
+ * @Description socketå®¢æˆ·ç«¯ï¼Œå¾€è½¦é“å‘é€æŒ‡ä»¤
+ * @createTime 2022å¹´03æœˆ23æ—¥ 13:41:00
  */
 public class SocketClientImpl {
 
-    public static void SocketClient(){
-        try{
-            Socket socket=new Socket("127.0.0.1",2001);
-            System.out.println("client start ...");
-            //Ïò±¾»úµÄ52000¶Ë¿Ú·¢³ö¿Í»§ÇëÇó
-            BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
-            //ÓÉÏµÍ³±ê×¼ÊäÈëÉè±¸¹¹ÔìBufferedReader¶ÔÏó
-            PrintWriter write=new PrintWriter(socket.getOutputStream());
-            //ÓÉSocket¶ÔÏóµÃµ½Êä³öÁ÷£¬²¢¹¹ÔìPrintWriter¶ÔÏó
-            BufferedReader in=new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            //ÓÉSocket¶ÔÏóµÃµ½ÊäÈëÁ÷£¬²¢¹¹ÔìÏàÓ¦µÄBufferedReader¶ÔÏó
-            String readline;
-            readline=br.readLine(); //´ÓÏµÍ³±ê×¼ÊäÈë¶ÁÈëÒ»×Ö·û´®
-            while(!readline.equals("end")){
-                //Èô´Ó±ê×¼ÊäÈë¶ÁÈëµÄ×Ö·û´®Îª "end"ÔòÍ£Ö¹Ñ­»·
-                write.println(readline);
-                //½«´ÓÏµÍ³±ê×¼ÊäÈë¶ÁÈëµÄ×Ö·û´®Êä³öµ½Server
-                write.flush();
-                //Ë¢ĞÂÊä³öÁ÷£¬Ê¹ServerÂíÉÏÊÕµ½¸Ã×Ö·û´®
-                System.out.println("Client:"+readline);
-                //ÔÚÏµÍ³±ê×¼Êä³öÉÏ´òÓ¡¶ÁÈëµÄ×Ö·û´®
-                System.out.println("Server:"+in.readLine());
-                //´ÓServer¶ÁÈëÒ»×Ö·û´®£¬²¢´òÓ¡µ½±ê×¼Êä³öÉÏ
-                readline=br.readLine(); //´ÓÏµÍ³±ê×¼ÊäÈë¶ÁÈëÒ»×Ö·û´®
-            } //¼ÌĞøÑ­»·
-            write.close(); //¹Ø±ÕSocketÊä³öÁ÷
-            in.close(); //¹Ø±ÕSocketÊäÈëÁ÷
-            socket.close(); //¹Ø±ÕSocket
-        }catch(Exception e) {
+    public boolean sendStringToServer(String serverIP,String parameterInfo){
+        //æ–°å»ºå®¢æˆ·ç«¯å¹¶è¯·æ±‚æœåŠ¡ç«¯çš„ipä¸ºlocalhost ç«¯å£ä¸º8088
+        Socket socket = null;
+        OutputStream outputStream = null;
+        try {
+            socket = new Socket(serverIP,2001);
+            //è·å–å®¢æˆ·ç«¯çš„è¾“å‡ºæµ å³å‘æœåŠ¡ç«¯å‘é€çš„æ•°æ®
+            outputStream = socket.getOutputStream();
+            //å‘è¾“å‡ºæµä¸­å†™å…¥è¦å‘é€çš„å­—ç¬¦ä¸²æ•°æ®
+            outputStream.write(parameterInfo.getBytes("utf-8"));
+            return true;
+        } catch (IOException e) {
             e.printStackTrace();
+        }finally {
+            closeStream(outputStream);
+            closeStream(socket);
+        }
+        return false;
+    }
+
+    /**
+     * @param oStream
+     * @description å…³é—­æ•°æ®æµ
+     */
+    public static void closeStream(Closeable oStream) {
+        if (null != oStream) {
+            try {
+                oStream.close();
+            } catch (IOException e) {
+                oStream = null;//èµ‹å€¼ä¸ºnull,ç­‰å¾…åƒåœ¾å›æ”¶
+                e.printStackTrace();
+            }
         }
     }
+
 }

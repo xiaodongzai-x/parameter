@@ -1,5 +1,7 @@
 package com.parameter.thread;
 
+import com.parameter.tools.LogCommon;
+
 /**
  * @author xiaodong
  * @version 1.0.0
@@ -10,12 +12,16 @@ package com.parameter.thread;
 public class CreateZlibThread implements Runnable {
     @Override
     public void run() {
-        //在联网中心级别
-        //连接oracle库
-        //根据条件查询出生成sql文件的语句
-        //生成文件
-        //压缩成zlib
-        //放到文件存储系统
-        //生成参数json 调用上传接口
+        LogCommon.WriteLogNormal(Thread.currentThread().getName() + "根据sql生成文件线程已启动...", "CreateZlibThread");
+        while (true){
+            //在联网中心级别
+
+            //连接oracle库
+            //根据条件查询出生成sql文件的语句
+            //生成文件
+            //压缩成zlib
+            //放到文件存储系统
+            //生成参数json 调用上传接口
+        }
   }
 }
