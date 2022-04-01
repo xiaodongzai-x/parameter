@@ -31,8 +31,8 @@ public interface ParameterService {
      */
     @WebMethod
     @WebResult(targetNamespace = "")
-    @RequestWrapper(localName = "downloadFileResult", targetNamespace = "http://service.parameter.com/", className = "parameterClient.DownloadFileResult")
-    @ResponseWrapper(localName = "downloadFileResultResponse", targetNamespace = "http://service.parameter.com/", className = "parameterClient.DownloadFileResultResponse")
+    @RequestWrapper(localName = "downloadFileResult", targetNamespace = "http://service.parameter.com/", className = "service3.DownloadFileResult")
+    @ResponseWrapper(localName = "downloadFileResultResponse", targetNamespace = "http://service.parameter.com/", className = "service3.DownloadFileResultResponse")
     public boolean downloadFileResult(
         @WebParam(name = "arg0", targetNamespace = "")
         String arg0);
@@ -44,8 +44,8 @@ public interface ParameterService {
      */
     @WebMethod
     @WebResult(targetNamespace = "")
-    @RequestWrapper(localName = "getNewFileVersion", targetNamespace = "http://service.parameter.com/", className = "parameterClient.GetNewFileVersion")
-    @ResponseWrapper(localName = "getNewFileVersionResponse", targetNamespace = "http://service.parameter.com/", className = "parameterClient.GetNewFileVersionResponse")
+    @RequestWrapper(localName = "getNewFileVersion", targetNamespace = "http://service.parameter.com/", className = "service3.GetNewFileVersion")
+    @ResponseWrapper(localName = "getNewFileVersionResponse", targetNamespace = "http://service.parameter.com/", className = "service3.GetNewFileVersionResponse")
     public String getNewFileVersion();
 
     /**
@@ -56,8 +56,8 @@ public interface ParameterService {
      */
     @WebMethod
     @WebResult(targetNamespace = "")
-    @RequestWrapper(localName = "getAppointFileVersion", targetNamespace = "http://service.parameter.com/", className = "parameterClient.GetAppointFileVersion")
-    @ResponseWrapper(localName = "getAppointFileVersionResponse", targetNamespace = "http://service.parameter.com/", className = "parameterClient.GetAppointFileVersionResponse")
+    @RequestWrapper(localName = "getAppointFileVersion", targetNamespace = "http://service.parameter.com/", className = "service3.GetAppointFileVersion")
+    @ResponseWrapper(localName = "getAppointFileVersionResponse", targetNamespace = "http://service.parameter.com/", className = "service3.GetAppointFileVersionResponse")
     public String getAppointFileVersion(
         @WebParam(name = "arg0", targetNamespace = "")
         int arg0);
@@ -70,9 +70,23 @@ public interface ParameterService {
      */
     @WebMethod
     @WebResult(targetNamespace = "")
-    @RequestWrapper(localName = "uploadFileResult", targetNamespace = "http://service.parameter.com/", className = "parameterClient.UploadFileResult")
-    @ResponseWrapper(localName = "uploadFileResultResponse", targetNamespace = "http://service.parameter.com/", className = "parameterClient.UploadFileResultResponse")
+    @RequestWrapper(localName = "uploadFileResult", targetNamespace = "http://service.parameter.com/", className = "service3.UploadFileResult")
+    @ResponseWrapper(localName = "uploadFileResultResponse", targetNamespace = "http://service.parameter.com/", className = "service3.UploadFileResultResponse")
     public boolean uploadFileResult(
+        @WebParam(name = "arg0", targetNamespace = "")
+        String arg0);
+
+    /**
+     * 
+     * @param arg0
+     * @return
+     *     returns java.lang.String
+     */
+    @WebMethod
+    @WebResult(targetNamespace = "")
+    @RequestWrapper(localName = "getFileURL", targetNamespace = "http://service.parameter.com/", className = "service3.GetFileURL")
+    @ResponseWrapper(localName = "getFileURLResponse", targetNamespace = "http://service.parameter.com/", className = "service3.GetFileURLResponse")
+    public String getFileURL(
         @WebParam(name = "arg0", targetNamespace = "")
         String arg0);
 

@@ -41,6 +41,8 @@
         <webServicePort>8080</webServicePort>
         //俩站一个ip另一个端口
         <specialPort>8081</specialPort>
+        //文件存储服务端口
+        <goFastPort>9022</goFastPort>
         //一次那取任务数量
         <getTaskNum>100</getTaskNum>
     </INIT>

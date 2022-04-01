@@ -10,20 +10,21 @@ import com.parameter.init.GetInit;
 import com.parameter.tools.DataBaseUtil;
 import com.parameter.tools.JsonUtil;
 import com.parameter.tools.LogCommon;
-import java.util.Date;
+
 import java.sql.*;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 
 /**
  * @author xiaodong
  * @version 1.0.0
- * @ClassName TaskThread.java
- * @Description çº¿ç¨‹éå†ä»»åŠ¡è¡¨
- * @createTime 2022å¹´03æœˆ17æ—¥ 08:52:00
+ * @ClassName TaskIssueThread.java
+ * @Description Ïß³Ì±éÀúÈÎÎñ±í, ÏÂ·¢ÈÎÎñ
+ * @createTime 2022Äê03ÔÂ17ÈÕ 08:52:00
  */
-public class TaskThread implements Runnable {
-    //è·å–parameterJson
+public class TaskIssueThread implements Runnable {
+    //»ñÈ¡parameterJson
     private static String getParameterJson(JSONObject jsonObject) {
         JSONObject parameterJson = null;
         try {
@@ -39,12 +40,12 @@ public class TaskThread implements Runnable {
             parameterJson.put("STAGBID", jsonObject.getString("STAGBID"));
         } catch (Exception e) {
             e.printStackTrace();
-            LogCommon.WriteLogNormal("è·å–å‚æ•°ä¿¡æ¯å¼‚å¸¸ï¼š" + e.getMessage(), "TaskThread");
+            LogCommon.WriteLogNormal("»ñÈ¡²ÎÊıĞÅÏ¢Òì³££º" + e.getMessage(), "TaskIssueThread");
         }
         return parameterJson.toJSONString();
     }
 
-    //è·å–ä»»åŠ¡è¡¨ä¿¡æ¯
+    //»ñÈ¡ÈÎÎñ±íĞÅÏ¢
     public static JSONArray getParameterTask(InitInfo initInfo) {
         JSONArray array = null;
         Connection connection = null;
@@ -65,7 +66,7 @@ public class TaskThread implements Runnable {
             array = JsonUtil.formatRsToArray(rs);
         } catch (Exception e) {
             e.printStackTrace();
-            LogCommon.WriteLogNormal("è·å–ä»»åŠ¡è¡¨ä¿¡æ¯å¼‚å¸¸ï¼š" + e.getMessage(), "TaskThread");
+            LogCommon.WriteLogNormal("»ñÈ¡ÈÎÎñ±íĞÅÏ¢Òì³££º" + e.getMessage(), "TaskIssueThread");
         } finally {
             DataBaseUtil.dataBaseCloseS(connection, ps, rs, Integer.parseInt(database.getDataBaseType()));
         }
@@ -76,8 +77,82 @@ public class TaskThread implements Runnable {
         return primaryKey.split("[|]");
     }
 
-    //æ›´æ–°ä»»åŠ¡è¡¨
-    private void updateTask(String taskID){
+    //Æ´½ÓÏÂ´«³µµÀĞÅÏ¢
+    private static String getParameterInfo(JSONObject jsonObject, String centerIP, String IPport, String level) {
+        //²ÎÊı³¤¶È|ÎÄ¼şÀàĞÍ|ÎÄ¼şÃû³Æ|ÊÇ·ñÑ¹Ëõ|·ÖÖĞĞÄWEBµØÖ·|ÏÂÔØÎÄ¼şµØÖ·|³µµÀ»Øµ÷µØÖ·|MD5|°æ±¾ºÅ|ÏÂ´«ÈÕÆÚ|ĞòÁĞºÅ|Â·¶ÎºÅ|Õ¾±àÂë|³µµÀºÅ|Õ¾ÎÄ¼şµØÖ·
+        //ĞòÁĞºÅÔõÃ´Éú³É£¿
+        //Èç¹ûÊÇ·ÖÖĞĞÄÏÂ´«³µµÀ£¬Ã»ÓĞÕ¾ÎÄ¼şµØÖ·ÔõÃ´°ì£¿
+        //Õ¾ÎÄ¼şµØÖ·Õ¾¼¶ÎÄ¼ş´æ·ÅÔÚgo-fastdfsµØÖ·£¿
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            StringBuffer buffer = new StringBuffer();
+            buffer.append(jsonObject.getLongValue("FILESIZE") + "|");//²ÎÊı³¤¶È
+            buffer.append(jsonObject.getIntValue("FILETYPE") + "|");//ÎÄ¼şÀàĞÍ
+            buffer.append(jsonObject.getString("FILENAME") + "|");//ÎÄ¼şÃû³Æ
+            buffer.append("1" + "|");//ÊÇ·ñÑ¹Ëõ
+            buffer.append(centerIP + "|");//·ÖÖĞĞÄwebµØÖ·
+            buffer.append(jsonObject.getString("FILEURL") + "|");
+            buffer.append(IPport + "|");//»Øµ÷µØÖ·
+            buffer.append(jsonObject.getString("FILEMD5") + "|");
+            buffer.append(jsonObject.getString("FILEVERSION") + "|");
+            buffer.append(sdf.format(new Date()) + "|");
+            buffer.append("ĞòÁĞºÅ" + "|");//ĞòÁĞºÅÔİ¶¨
+            buffer.append(jsonObject.getString("ROADNO") + "|");
+            buffer.append(jsonObject.getString("STANO") + "|");
+            buffer.append(jsonObject.getString("PORTNO") + "|");
+            if (level.equals("20")) {
+                //¸ù¾İROADNOºÍSTANOÏÈÈ·¶¨Õ¾¼¶ÒÑ¾­ÏÂÔØ
+                String srvip = getOneStano(Integer.parseInt(jsonObject.getString("ROADNO")),Integer.parseInt(jsonObject.getString("ROADNO")));
+                String[] strings = jsonObject.getString("FILEURL").split(":");
+                //»ñÈ¡Õ¾¼¶ÎÄ¼şÏÂÔØÂ·¾¶
+                buffer.append("http://");
+                buffer.append(srvip);
+                buffer.append(strings[1]+"|");
+            } else if(level.equals("30")){
+                buffer.append(jsonObject.getString("FILEURL") + "|");//Õ¾ÎÄ¼şµØÖ·Ôİ¶¨
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    //»ñÈ¡Õ¾±íĞÅÏ¢
+    public static String getOneStano(int roadno,int stano) {
+        Connection connection = null;
+        Statement ps = null;
+        ResultSet rs = null;
+        Database database = null;
+        try {
+            String sql = "select SRVIP from FT_NAME_TABLE where ROADNO="+roadno+" and STANO="+stano;
+            database = DataBaseUtil.getDataBase(0);
+            connection = DataBaseUtil.getConn(database);
+            ps = connection.createStatement();
+            rs = ps.executeQuery(sql);
+            while (rs.next()) {
+                return rs.getString("SRVIP");
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } finally {
+            DataBaseUtil.dataBaseCloseS(connection, ps, rs, Integer.parseInt(database.getDataBaseType()));
+        }
+        return null;
+    }
+
+    private static int getExistNum(String stano, String[] stanos) {
+        int isExist = 0;
+        for (int j = 0; j < stanos.length; j++) {
+            if (stano.equals(stanos[j])) {
+                isExist = 1;
+                break;
+            }
+        }
+        return isExist;
+    }
+
+    //¸üĞÂÈÎÎñ±í
+    private void updateTask(String taskID) {
         Connection connection = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -87,31 +162,31 @@ public class TaskThread implements Runnable {
             database = DataBaseUtil.getDataBase(0);
             connection = DataBaseUtil.getConn(database);
             ps = connection.prepareStatement(sql);
-            ps.setString(1,taskID);
+            ps.setString(1, taskID);
             int num = ps.executeUpdate();
-            if(num==1){
-                LogCommon.WriteLogNormal("æ›´æ–°ä»»åŠ¡"+taskID+"æˆåŠŸ","TaskThread");
-            }else {
-                LogCommon.WriteLogNormal("æ›´æ–°ä»»åŠ¡"+taskID+"æˆåŠŸ","TaskThread");
+            if (num == 1) {
+                LogCommon.WriteLogNormal("¸üĞÂÈÎÎñ" + taskID + "³É¹¦", "TaskIssueThread");
+            } else {
+                LogCommon.WriteLogNormal("¸üĞÂÈÎÎñ" + taskID + "³É¹¦", "TaskIssueThread");
             }
         } catch (SQLException throwables) {
             throwables.printStackTrace();
-            LogCommon.WriteLogNormal("æ›´æ–°ä»»åŠ¡"+taskID+"å¼‚å¸¸:"+throwables.getMessage(),"TaskThread");
+            LogCommon.WriteLogNormal("¸üĞÂÈÎÎñ" + taskID + "Òì³£:" + throwables.getMessage(), "TaskIssueThread");
         } finally {
             DataBaseUtil.dataBaseCloseS(connection, ps, rs, Integer.parseInt(database.getDataBaseType()));
         }
     }
 
-    //æ‹¼æ¥æ’å…¥sql
-    private String getInsertSql(JSONObject jsonObject,String tableName){
+    //Æ´½Ó²åÈësql
+    private String getInsertSql(JSONObject jsonObject, String tableName) {
         try {
             StringBuffer sql1 = null;
             StringBuffer sql2 = null;
             sql1.append("if not exists ( ");
-            sql1.append("select 1 from "+tableName+" where TASKID = ? ) ");
-            sql1.append("insert into "+tableName+" (");
+            sql1.append("select 1 from " + tableName + " where TASKID = ? ) ");
+            sql1.append("insert into " + tableName + " (");
             sql2.append("values(");
-            //fastjsonè§£ææ–¹æ³•
+            //fastjson½âÎö·½·¨
             for (Map.Entry<String, Object> entry : jsonObject.entrySet()) {
                 sql1.append(entry.getKey() + ",");
                 sql2.append("?,");
@@ -125,8 +200,8 @@ public class TaskThread implements Runnable {
         return null;
     }
 
-    //æ’å…¥æ—¥å¿—è®°å½•
-    private void insertTaskLog(JSONObject jsonObject,String taskDate,int number,String level){
+    //²åÈëÈÕÖ¾¼ÇÂ¼
+    private void insertTaskLog(JSONObject jsonObject, String taskDate, int number, String level) {
         Connection connection = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -134,79 +209,38 @@ public class TaskThread implements Runnable {
         try {
             String nowDate = level + taskDate + "" + (number + 10);
             jsonObject.put("TASKID", nowDate);
-            LogCommon.WriteLogNormal("å¼€å§‹å°†ä¸‹å‘è®°å½•æ’å…¥åˆ°æ—¥å¿—è¡¨", "TaskThread");
-            //ä»»åŠ¡æ’å…¥ä»»åŠ¡è¡¨
+            LogCommon.WriteLogNormal("¿ªÊ¼½«ÏÂ·¢¼ÇÂ¼²åÈëµ½ÈÕÖ¾±í", "TaskIssueThread");
+            //ÈÎÎñ²åÈëÈÎÎñ±í
             database = DataBaseUtil.getDataBase(0);
             connection = DataBaseUtil.getConn(database);
-            String insertCenter = getInsertSql(jsonObject,"FT_TASK_LOG_TABLE");
+            String insertCenter = getInsertSql(jsonObject, "FT_TASK_LOG_TABLE");
             ps = connection.prepareStatement(insertCenter);
-                int index = 0;
-                ps.setString(++index, jsonObject.getString("TASKID"));
-                for (Map.Entry<String, Object> entry : jsonObject.entrySet()) {
-                    if (entry.getValue() == null || "".equals(entry.getValue())) {
-                        ps.setNull(++index, Types.CHAR);
-                    } else {
-                        ps.setString(++index, entry.getValue().toString());
-                    }
+            int index = 0;
+            ps.setString(++index, jsonObject.getString("TASKID"));
+            for (Map.Entry<String, Object> entry : jsonObject.entrySet()) {
+                if (entry.getValue() == null || "".equals(entry.getValue())) {
+                    ps.setNull(++index, Types.CHAR);
+                } else {
+                    ps.setString(++index, entry.getValue().toString());
                 }
-                int num = ps.executeUpdate();
-            if(num==1){
-                LogCommon.WriteLogNormal("æ—¥å¿—è®°å½•æ’å…¥æˆåŠŸ","TaskThread");
-            }else {
-                LogCommon.WriteLogNormal("æ—¥å¿—è®°å½•æ’å…¥å¤±è´¥","TaskThread");
+            }
+            int num = ps.executeUpdate();
+            if (num == 1) {
+                LogCommon.WriteLogNormal("ÈÕÖ¾¼ÇÂ¼²åÈë³É¹¦", "TaskIssueThread");
+            } else {
+                LogCommon.WriteLogNormal("ÈÕÖ¾¼ÇÂ¼²åÈëÊ§°Ü", "TaskIssueThread");
             }
         } catch (Exception e) {
             e.printStackTrace();
-            LogCommon.WriteLogNormal("æ—¥å¿—è®°å½•æ’å…¥å¼‚å¸¸ï¼š" + e.getMessage(), "TaskThread");
+            LogCommon.WriteLogNormal("ÈÕÖ¾¼ÇÂ¼²åÈëÒì³££º" + e.getMessage(), "TaskIssueThread");
         } finally {
             DataBaseUtil.dataBaseCloseS(connection, ps, rs, Integer.parseInt(database.getDataBaseType()));
         }
     }
 
-    //æ‹¼æ¥ä¸‹ä¼ è½¦é“ä¿¡æ¯
-    private static String getParameterInfo(JSONObject jsonObject,String centerIP,String IPport){
-        //å‚æ•°é•¿åº¦|æ–‡ä»¶ç±»å‹|æ–‡ä»¶åç§°|æ˜¯å¦å‹ç¼©|åˆ†ä¸­å¿ƒWEBåœ°å€|ä¸‹è½½æ–‡ä»¶åœ°å€|è½¦é“å›è°ƒåœ°å€|MD5|ç‰ˆæœ¬å·|ä¸‹ä¼ æ—¥æœŸ|åºåˆ—å·|è·¯æ®µå·|ç«™ç¼–ç |è½¦é“å·|ç«™æ–‡ä»¶åœ°å€
-        //åºåˆ—å·æ€ä¹ˆç”Ÿæˆï¼Ÿ
-        //å¦‚æœæ˜¯åˆ†ä¸­å¿ƒä¸‹ä¼ è½¦é“ï¼Œæ²¡æœ‰ç«™æ–‡ä»¶åœ°å€æ€ä¹ˆåŠï¼Ÿ
-        //ç«™æ–‡ä»¶åœ°å€ç«™çº§æ–‡ä»¶å­˜æ”¾åœ¨go-fastdfsåœ°å€ï¼Ÿ
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            StringBuffer buffer = new StringBuffer();
-            buffer.append(jsonObject.getLongValue("FILESIZE")+"|");//å‚æ•°é•¿åº¦
-            buffer.append(jsonObject.getIntValue("FILETYPE")+"|");//æ–‡ä»¶ç±»å‹
-            buffer.append(jsonObject.getString("FILENAME")+"|");//æ–‡ä»¶åç§°
-            buffer.append("1"+"|");//æ˜¯å¦å‹ç¼©
-            buffer.append(centerIP+"|");//åˆ†ä¸­å¿ƒwebåœ°å€
-            buffer.append(jsonObject.getString("FILEURL")+"|");
-            buffer.append(IPport+"|");
-            buffer.append(jsonObject.getString("FILEMD5")+"|");
-            buffer.append(jsonObject.getString("FILEVERSION")+"|");
-            buffer.append(sdf.format(new Date())+"|");
-            buffer.append("åºåˆ—å·"+"|");//åºåˆ—å·æš‚å®š
-            buffer.append(jsonObject.getString("ROADNO")+"|");
-            buffer.append(jsonObject.getString("STANO")+"|");
-            buffer.append(jsonObject.getString("PORTNO")+"|");
-            buffer.append("ç«™æ–‡ä»¶åœ°å€æš‚å®š"+"|");//ç«™æ–‡ä»¶åœ°å€æš‚å®š
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    private static int getExistNum(String stano,String[] stanos){
-        int isExist = 0;
-        for (int j = 0; j < stanos.length; j++) {
-            if (stano.equals(stanos[j])) {
-                isExist = 1;
-                break;
-            }
-        }
-        return isExist;
-    }
-
     @Override
     public void run() {
-        LogCommon.WriteLogNormal(Thread.currentThread().getName() + "éå†ä»»åŠ¡çº¿ç¨‹å·²å¼€å¯...", "TaskThread");
+        LogCommon.WriteLogNormal(Thread.currentThread().getName() + "±éÀúÈÎÎñÏß³ÌÒÑ¿ªÆô...", "TaskIssueThread");
         InitInfo initInfo = GetInit.getInitInfo();
         String[] stanos = getList(initInfo.getSpecialStano());
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -214,27 +248,27 @@ public class TaskThread implements Runnable {
         Database database = DataBaseUtil.getDataBase(0);
         JSONObject jsonObject = null;
         while (true) {
-            //1.è¿æ¥æ•°æ®åº“ï¼Œéå†ä»»åŠ¡è¡¨
-            //2.ç­›é€‰è‡ªåŠ¨ä¸‹å‘ç±»å‹çš„æ•°æ®æ‹¼æ¥æˆjsonå­—ç¬¦ä¸²
+            //1.Á¬½ÓÊı¾İ¿â£¬±éÀúÈÎÎñ±í
+            //2.É¸Ñ¡×Ô¶¯ÏÂ·¢ÀàĞÍµÄÊı¾İÆ´½Ó³Éjson×Ö·û´®
             JSONArray jsonArray = getParameterTask(initInfo);
             if (jsonArray == null || jsonArray.size() == 0) {
-                LogCommon.WriteLogNormal("ä»»åŠ¡è¡¨æš‚æ— ä»»åŠ¡ï¼Œä¼‘çœ 10ç§’", "TaskThread");
+                LogCommon.WriteLogNormal("ÈÎÎñ±íÔİÎŞÈÎÎñ£¬ĞİÃß10Ãë", "TaskIssueThread");
                 try {
                     Thread.sleep(10 * 1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                return;
+                continue;
             }
             String issuDate = null;
             String taskDate = null;
             String level = null;
-            //éå†jsonæ•°ç»„
+            //±éÀújsonÊı×é
             for (int i = 0; i < jsonArray.size(); i++) {
                 try {
-                    //3.åˆ¤æ–­ä¸‹çº§ç±»å‹
+                    //3.ÅĞ¶ÏÏÂ¼¶ÀàĞÍ
                     boolean flag = false;
-                    jsonObject= JsonUtil.transToUpperObject(jsonArray.getJSONObject(i).toJSONString());
+                    jsonObject = JsonUtil.transToUpperObject(jsonArray.getJSONObject(i).toJSONString());
                     String taskID = jsonObject.getString("TASKID");
                     int location = jsonObject.getIntValue("LOCATION");
                     String serverIP = jsonObject.getString("SERVERIP");
@@ -245,16 +279,16 @@ public class TaskThread implements Runnable {
                     taskDate = sdfTaskID.format(date);
                     issuDate = sdf.format(date);
                     if (location == 1) {
-                        //3.1ä¸‹çº§æ˜¯åˆ†ä¸­å¿ƒ
+                        //3.1ÏÂ¼¶ÊÇ·ÖÖĞĞÄ
                         level = "10";
                         ParameterService_Service.getIPPort(serverIP + ":" + initInfo.getWebServicePort());
                         ParameterService_Service service = new ParameterService_Service();
                         flag = service.getParameterServiceImplPort().uploadFileResult(parameterJson);
                     } else if (location == 2) {
-                        //3.2ä¸‹çº§æ˜¯ç«™æ˜¯ç«™
-                        //è°ƒç”¨webserviceä¸‹å‘
+                        //3.2ÏÂ¼¶ÊÇÕ¾ÊÇÕ¾
+                        //µ÷ÓÃwebserviceÏÂ·¢
                         level = "20";
-                        int isExist = getExistNum(stano,stanos);
+                        int isExist = getExistNum(stano, stanos);
                         if (isExist == 0) {
                             ParameterService_Service.getIPPort(serverIP + ":" + initInfo.getWebServicePort());
                             ParameterService_Service service = new ParameterService_Service();
@@ -266,50 +300,48 @@ public class TaskThread implements Runnable {
                         }
                     } else {
                         level = "30";
-                        //3.3ä¸‹çº§æ˜¯è½¦é“
-                        //è°ƒç”¨socketä¸‹å‘
+                        //3.3ÏÂ¼¶ÊÇ³µµÀ
+                        //µ÷ÓÃsocketÏÂ·¢
                         String centerIP;
                         String IPport;
-                        SocketClientImpl sci = new SocketClientImpl();
-                        if(initInfo.getLevel().equals("20")){
+                        if (initInfo.getLevel().equals("20")) {
                             centerIP = database.getIP();
-                            IPport ="http://"+database.getIP()+":"+initInfo.getWebServicePort()+"/parameter/api?wsdl";
-                        }else {
+                            IPport = "http://" + database.getIP() + ":" + initInfo.getWebServicePort() + "/parameter/api?wsdl";
+                        } else {
                             String[] strings = getList(initInfo.getSuperiorIP());
                             centerIP = strings[1];
-                            int isExist = getExistNum(stano,stanos);
-                            if(isExist==0){
-                                IPport ="http://"+database.getIP()+":"+initInfo.getWebServicePort()+"/parameter/api?wsdl";
-                            }else {
-                                IPport ="http://"+database.getIP()+":"+initInfo.getSpecialPort()+"/parameter/api?wsdl";
+                            int isExist = getExistNum(stano, stanos);
+                            if (isExist == 0) {
+                                IPport = "http://" + database.getIP() + ":" + initInfo.getWebServicePort() + "/parameter/api?wsdl";
+                            } else {
+                                IPport = "http://" + database.getIP() + ":" + initInfo.getSpecialPort() + "/parameter/api?wsdl";
                             }
 
                         }
-                        String parameterInfo = getParameterInfo(jsonObject,centerIP,IPport);
-                        //æ­¤å¤„è¿˜æœ‰é—®é¢˜...
-                        //æœåŠ¡ç«¯æ˜¯å¦è¿”å›æ¶ˆæ¯...
-                        flag = sci.sendStringToServer(jsonObject.getString("SERVERIP"),parameterInfo);
+                        String parameterInfo = getParameterInfo(jsonObject, centerIP, IPport, initInfo.getLevel());
+                        SocketClientImpl sci = new SocketClientImpl();
+                        flag = sci.sendStringToServer(jsonObject.getString("SERVERIP"), parameterInfo);
                     }
-                    //æ ¹æ®flagå–æ›´æ–°ä»»åŠ¡çŠ¶æ€
+                    //¸ù¾İflagÈ¡¸üĞÂÈÎÎñ×´Ì¬
                     if (flag) {
-                        //æˆåŠŸ  æ›´æ–°ä»»åŠ¡è¡¨
-                        LogCommon.WriteLogNormal("å‚æ•°" + filekey + "ä¸‹å‘åˆ°" + serverIP + "æˆåŠŸ", "TaskThread");
+                        //³É¹¦  ¸üĞÂÈÎÎñ±í
+                        LogCommon.WriteLogNormal("²ÎÊı" + filekey + "ÏÂ·¢µ½" + serverIP + "³É¹¦", "TaskIssueThread");
                         updateTask(taskID);
-                        jsonObject.put("INSTRISSUESTATUS",1);
-                        jsonObject.put("INSTRISSUERESULT","æˆåŠŸ");
-                        jsonObject.put("INSTRISSUEDT",issuDate);
+                        jsonObject.put("INSTRISSUESTATUS", 1);
+                        jsonObject.put("INSTRISSUERESULT", "³É¹¦");
+                        jsonObject.put("INSTRISSUEDT", issuDate);
                     }
-                    //æ’å…¥æ—¥å¿—è¡¨
+                    //²åÈëÈÕÖ¾±í
                     jsonObject.remove("TASKSTATUS");
-                    insertTaskLog(jsonObject,taskDate,i,level);
+                    insertTaskLog(jsonObject, taskDate, i, level);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    LogCommon.WriteLogNormal("å‚æ•°ä¸‹å‘å¼‚å¸¸ï¼š" + e.getMessage(), "TaskThread");
-                    jsonObject.put("INSTRISSUESTATUS",2);
-                    jsonObject.put("INSTRISSUERESULT",e.getMessage());
-                    jsonObject.put("INSTRISSUEDT",issuDate);
+                    LogCommon.WriteLogNormal("²ÎÊıÏÂ·¢Òì³££º" + e.getMessage(), "TaskIssueThread");
+                    jsonObject.put("INSTRISSUESTATUS", 2);
+                    jsonObject.put("INSTRISSUERESULT", e.getMessage());
+                    jsonObject.put("INSTRISSUEDT", issuDate);
                     jsonObject.remove("TASKSTATUS");
-                    insertTaskLog(jsonObject,taskDate,i,level);
+                    insertTaskLog(jsonObject, taskDate, i, level);
                 }
 
             }

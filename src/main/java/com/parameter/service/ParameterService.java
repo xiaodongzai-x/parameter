@@ -27,4 +27,7 @@ public interface ParameterService {
 
     @WebMethod
     String getAppointFileVersion(int fileType);
+
+    @WebMethod
+    String getFileURL(String fileKey);
 }

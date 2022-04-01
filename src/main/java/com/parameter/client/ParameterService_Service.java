@@ -17,9 +17,9 @@ import javax.xml.ws.WebServiceFeature;
  * Generated source version: 2.2
  * 
  */
-@WebServiceClient(name = "ParameterService", targetNamespace = "http://service.parameter.com/", wsdlLocation = "http://localhost:8080/parameter/api?wsdl")
+@WebServiceClient(name = "ParameterService", targetNamespace = "http://service.parameter.com/", wsdlLocation = "${WSDLURL}")
 public class ParameterService_Service
-    extends Service
+        extends Service
 {
 
     private static String WSDLURL;

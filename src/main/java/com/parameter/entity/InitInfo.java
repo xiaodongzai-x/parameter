@@ -17,7 +17,7 @@ public class InitInfo {
     private String webServicePort;
     private String specialPort;
     private int getTaskNum;
-
+    private String goFastPort;
 
     @Override
     public String toString() {
@@ -29,7 +29,16 @@ public class InitInfo {
                 ", webServicePort='" + webServicePort + '\'' +
                 ", specialPort='" + specialPort + '\'' +
                 ", getTaskNum=" + getTaskNum +
+                ", goFastPort='" + goFastPort + '\'' +
                 '}';
+    }
+
+    public String getGoFastPort() {
+        return goFastPort;
+    }
+
+    public void setGoFastPort(String goFastPort) {
+        this.goFastPort = goFastPort;
     }
 
     public int getGetTaskNum() {

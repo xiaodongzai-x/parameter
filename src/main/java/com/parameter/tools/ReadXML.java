@@ -132,6 +132,7 @@ public class ReadXML {
             initInfo.setSpecialStano(node.selectSingleNode("specialStano").getStringValue());
             initInfo.setWebServicePort(node.selectSingleNode("webServicePort").getStringValue());
             initInfo.setSpecialPort(node.selectSingleNode("specialPort").getStringValue());
+            initInfo.setGoFastPort(node.selectSingleNode("goFastPort").getStringValue());
             initInfo.setGetTaskNum(Integer.valueOf(node.selectSingleNode("getTaskNum").getStringValue()));
         } catch (Exception e) {
             LogCommon.WriteLogNormal("获取初始化配置文件异常", "error");

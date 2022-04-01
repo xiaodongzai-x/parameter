@@ -10,7 +10,7 @@ import javax.xml.namespace.QName;
 /**
  * This object contains factory methods for each 
  * Java content interface and Java element interface 
- * generated in the parameterClient package. 
+ * generated in the service3 package. 
  * <p>An ObjectFactory allows you to programatically 
  * construct new instances of the Java representation 
  * for XML content. The Java representation of XML 
@@ -24,6 +24,7 @@ import javax.xml.namespace.QName;
 @XmlRegistry
 public class ObjectFactory {
 
+    private final static QName _GetFileURLResponse_QNAME = new QName("http://service.parameter.com/", "getFileURLResponse");
     private final static QName _UploadFileResultResponse_QNAME = new QName("http://service.parameter.com/", "uploadFileResultResponse");
     private final static QName _DownloadFileResultResponse_QNAME = new QName("http://service.parameter.com/", "downloadFileResultResponse");
     private final static QName _GetNewFileVersion_QNAME = new QName("http://service.parameter.com/", "getNewFileVersion");
@@ -32,12 +33,21 @@ public class ObjectFactory {
     private final static QName _UploadFileResult_QNAME = new QName("http://service.parameter.com/", "uploadFileResult");
     private final static QName _DownloadFileResult_QNAME = new QName("http://service.parameter.com/", "downloadFileResult");
     private final static QName _GetAppointFileVersionResponse_QNAME = new QName("http://service.parameter.com/", "getAppointFileVersionResponse");
+    private final static QName _GetFileURL_QNAME = new QName("http://service.parameter.com/", "getFileURL");
 
     /**
-     * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: parameterClient
+     * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: service3
      * 
      */
     public ObjectFactory() {
+    }
+
+    /**
+     * Create an instance of {@link GetFileURLResponse }
+     * 
+     */
+    public GetFileURLResponse createGetFileURLResponse() {
+        return new GetFileURLResponse();
     }
 
     /**
@@ -89,6 +99,14 @@ public class ObjectFactory {
     }
 
     /**
+     * Create an instance of {@link GetFileURL }
+     * 
+     */
+    public GetFileURL createGetFileURL() {
+        return new GetFileURL();
+    }
+
+    /**
      * Create an instance of {@link DownloadFileResult }
      * 
      */
@@ -102,6 +120,15 @@ public class ObjectFactory {
      */
     public GetAppointFileVersionResponse createGetAppointFileVersionResponse() {
         return new GetAppointFileVersionResponse();
+    }
+
+    /**
+     * Create an instance of {@link JAXBElement }{@code <}{@link GetFileURLResponse }{@code >}}
+     * 
+     */
+    @XmlElementDecl(namespace = "http://service.parameter.com/", name = "getFileURLResponse")
+    public JAXBElement<GetFileURLResponse> createGetFileURLResponse(GetFileURLResponse value) {
+        return new JAXBElement<GetFileURLResponse>(_GetFileURLResponse_QNAME, GetFileURLResponse.class, null, value);
     }
 
     /**
@@ -174,6 +201,15 @@ public class ObjectFactory {
     @XmlElementDecl(namespace = "http://service.parameter.com/", name = "getAppointFileVersionResponse")
     public JAXBElement<GetAppointFileVersionResponse> createGetAppointFileVersionResponse(GetAppointFileVersionResponse value) {
         return new JAXBElement<GetAppointFileVersionResponse>(_GetAppointFileVersionResponse_QNAME, GetAppointFileVersionResponse.class, null, value);
+    }
+
+    /**
+     * Create an instance of {@link JAXBElement }{@code <}{@link GetFileURL }{@code >}}
+     * 
+     */
+    @XmlElementDecl(namespace = "http://service.parameter.com/", name = "getFileURL")
+    public JAXBElement<GetFileURL> createGetFileURL(GetFileURL value) {
+        return new JAXBElement<GetFileURL>(_GetFileURL_QNAME, GetFileURL.class, null, value);
     }
 
 }

@@ -16,6 +16,7 @@ import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author xiaodong
@@ -39,16 +40,21 @@ public class TimingDelete implements Runnable {
         return startDate;
     }
 
-
-    private static CachedRowSetImpl getOverTimeFile(String overTime) {
+    private static CachedRowSetImpl getOverTimeFile(String overTime, int laterDay) {
         Connection connection = null;
         Statement ps = null;
         ResultSet rs = null;
         Database database = null;
         CachedRowSetImpl crs = null;
         try {
-            String getCreateFileSql = "select FILEKEY,FILEURL,FILEMD5 FROM FT_UPLOAD_TABLE WHERE FILEDT < " + overTime;
+            String getCreateFileSql;
             database = DataBaseUtil.getDataBase(0);
+            if (database.getDataBaseType().equals("1")) {
+                getCreateFileSql = "select FILEKEY,FILEURL,FILEMD5 FROM FT_UPLOAD_TABLE WHERE FILEDT < " + overTime;
+            } else {
+                getCreateFileSql = "select FILEKEY,FILEURL,FILEMD5 FROM FT_UPLOAD_TABLE WHERE DATE_SUB(CURDATE(), INTERVAL " + laterDay + " DAY) >  FILEDT";
+            }
+
             connection = DataBaseUtil.getConn(database);
             ps = connection.createStatement();
             rs = ps.executeQuery(getCreateFileSql);
@@ -62,7 +68,6 @@ public class TimingDelete implements Runnable {
         }
         return crs;
     }
-
 
     private static void deleteFileTable(String fileKey) {
         Connection connection = null;
@@ -91,18 +96,28 @@ public class TimingDelete implements Runnable {
     public static boolean deleteFile(String deleteURL) {
         String result = "";
         try {
-            OkHttpClient httpClient = new OkHttpClient();
+            if (deleteURL==null||"".equals(deleteURL)){
+                LogCommon.WriteLogNormal("删除路径为空" , "TimingDelete");
+                return false;
+            }
+            //添加http连接超时信息
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(20, TimeUnit.SECONDS)
+                    .readTimeout(60*5,TimeUnit.SECONDS)
+                    .writeTimeout(60*5,TimeUnit.SECONDS)
+                    .build();
+            //设置返回信息json格式
             MultipartBody multipartBody = new MultipartBody.Builder().
                     setType(MultipartBody.FORM)
                     .addFormDataPart("output", "json")
                     .build();
-
+            //添加请求信息
             Request request = new Request.Builder()
                     .url(deleteURL)
                     .post(multipartBody)
                     .build();
-
-            Response response = httpClient.newCall(request).execute();
+            //执行请求
+            Response response = client.newCall(request).execute();
             ResponseBody body = response.body();
             if (response.isSuccessful()) {
                 if (body != null) {
@@ -121,7 +136,20 @@ public class TimingDelete implements Runnable {
         return false;
     }
 
-    private static String getDeleteURL(String fileURL, String fileMD5) {
+    private static String getDeleteURL(String fileURL, String fileMD5, String goFastPort,String level) {
+        try {
+            if (level.equals("10")){
+                return getLevelLw(fileURL,fileMD5,goFastPort);
+            }else {
+                return getLevelOther(fileURL,fileMD5);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private static String getLevelLw(String fileURL, String fileMD5, String goFastPort){
         try {
             String url2 = fileURL.substring(7);
             String[] strings = url2.split("\\/");
@@ -130,7 +158,7 @@ public class TimingDelete implements Runnable {
             buffer.append("http://");
             buffer.append(ips[0] + "." + ips[1] + "." + ips[2] + ".");
             buffer.append(strings[2].substring(7) + ":");
-            buffer.append("9022/");
+            buffer.append(goFastPort + "/");
             buffer.append(strings[1] + "/");
             buffer.append("delete?");
             buffer.append("md5=" + fileMD5);
@@ -142,6 +170,22 @@ public class TimingDelete implements Runnable {
         return null;
     }
 
+    private static String getLevelOther(String fileURL, String fileMD5){
+        try {
+            String url2 = fileURL.substring(7);
+            String[] strings = url2.split("\\/");
+            StringBuffer buffer = new StringBuffer();
+            buffer.append("http://");
+            buffer.append(strings[0]+"/"+strings[1]+"/");
+            buffer.append("delete?");
+            buffer.append("md5=" + fileMD5);
+            return buffer.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            LogCommon.WriteLogNormal("解析删除路径异常：" + e.getMessage(), "TimingDelete");
+        }
+        return null;
+    }
 
     @Override
     public void run() {
@@ -153,27 +197,21 @@ public class TimingDelete implements Runnable {
                 //获取过期日期
                 String overTime = getOverTime(initInfo.getFileOutTime());
                 //根据过期日期查询数据
-                crs = getOverTimeFile(overTime);
-                //判断级别
-                if (initInfo.getLevel().equals("10")) {
-                    while (crs.next()) {
-                        String fileKey = crs.getString("FILEKEY");
-                        String fileMD5 = crs.getString("FILEMD5");
-                        String fileURL = crs.getString("FILEURL");
-                        //构建删除路径
-                        String deleteURL = getDeleteURL(fileURL, fileMD5);
-                        boolean flag = deleteFile(deleteURL);
-                        if (flag) {
-                            LogCommon.WriteLogNormal("文件fileKey：" + fileKey + "已从文件系统删除", "TimingDelete");
-                            deleteFileTable(fileKey);
-                        } else {
-                            LogCommon.WriteLogNormal("该文件fileKey：" + fileKey + "不存在，直接删除FT_UPLOAD_TABLE表里的数据", "TimingDelete");
-                            deleteFileTable(fileKey);
-                        }
-
+                crs = getOverTimeFile(overTime, Integer.valueOf(initInfo.getFileOutTime()));
+                while (crs.next()) {
+                    String fileKey = crs.getString("FILEKEY");
+                    String fileMD5 = crs.getString("FILEMD5");
+                    String fileURL = crs.getString("FILEURL");
+                    //构建删除路径
+                    String deleteURL = getDeleteURL(fileURL, fileMD5, initInfo.getGoFastPort(),initInfo.getLevel());
+                    boolean flag = deleteFile(deleteURL);
+                    if (flag) {
+                        LogCommon.WriteLogNormal("文件fileKey：" + fileKey + "已从文件系统删除", "TimingDelete");
+                        deleteFileTable(fileKey);
+                    } else {
+                        LogCommon.WriteLogNormal("该文件fileKey：" + fileKey + "不存在，直接删除FT_UPLOAD_TABLE表里的数据", "TimingDelete");
+                        deleteFileTable(fileKey);
                     }
-                } else {
-                    //分中心和站的数据稍后再做处理...
                 }
             } catch (SQLException throwables) {
                 throwables.printStackTrace();

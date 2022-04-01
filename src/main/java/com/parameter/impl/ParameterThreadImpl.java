@@ -1,9 +1,6 @@
 package com.parameter.impl;
 
-import com.parameter.thread.CreateZlibThread;
-import com.parameter.thread.GenerateFileThread;
-import com.parameter.thread.TaskThread;
-import com.parameter.thread.TimingDelete;
+import com.parameter.thread.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +19,7 @@ public class ParameterThreadImpl {
     @Async
     @PostConstruct
     public void taskParameter(){
-        Thread tt = new Thread(new TaskThread());
+        Thread tt = new Thread(new TaskIssueThread());
         tt.start();
     }
 
@@ -35,15 +32,22 @@ public class ParameterThreadImpl {
 
     @Async
     @PostConstruct
-    public void generateFileThread(){
-        Thread td = new Thread(new GenerateFileThread());
+    public void createZlibThread(){
+        Thread td = new Thread(new CreateZlibThread());
         td.start();
     }
 
     @Async
     @PostConstruct
-    public void createZlibThread(){
-        Thread td = new Thread(new CreateZlibThread());
+    public void createTaskThread(){
+        Thread td = new Thread(new CreateTaskThread());
+        td.start();
+    }
+
+    @Async
+    @PostConstruct
+    public void cenerateFileThread(){
+        Thread td = new Thread(new GenerateFileThread());
         td.start();
     }
 }

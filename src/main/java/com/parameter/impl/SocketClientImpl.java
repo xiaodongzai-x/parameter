@@ -1,5 +1,7 @@
 package com.parameter.impl;
 
+import com.parameter.tools.ByteArray;
+
 import java.io.*;
 import java.net.Socket;
 
@@ -16,35 +18,28 @@ public class SocketClientImpl {
         //新建客户端并请求服务端的ip为localhost 端口为8088
         Socket socket = null;
         OutputStream outputStream = null;
+        BufferedReader reader = null;
+        InputStream inputStream = null;
         try {
-            socket = new Socket(serverIP,2001);
-            //获取客户端的输出流 即向服务端发送的数据
+            //绑定服务器端IP与端口并发送消息
+            socket = new Socket(serverIP, 2001);
             outputStream = socket.getOutputStream();
-            //向输出流中写入要发送的字符串数据
             outputStream.write(parameterInfo.getBytes("utf-8"));
-            return true;
+            socket.shutdownOutput();
+            //输出socket服务器端返回的消息
+            inputStream = socket.getInputStream();
+            reader = new BufferedReader(new InputStreamReader(inputStream));
+            if (reader.readLine().equals("1")){
+                return true;
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }finally {
-            closeStream(outputStream);
-            closeStream(socket);
+            ByteArray.closeStream(outputStream);
+            ByteArray.closeStream(reader);
+            ByteArray.closeStream(inputStream);
+            ByteArray.closeStream(socket);
         }
         return false;
     }
-
-    /**
-     * @param oStream
-     * @description 关闭数据流
-     */
-    public static void closeStream(Closeable oStream) {
-        if (null != oStream) {
-            try {
-                oStream.close();
-            } catch (IOException e) {
-                oStream = null;//赋值为null,等待垃圾回收
-                e.printStackTrace();
-            }
-        }
-    }
-
 }
